@@ -19,7 +19,7 @@ package org.apache.dubbo.config;
 import org.apache.dubbo.common.utils.StringUtils;
 
 /**
- * The service consumer default configuration
+ * 服务消费者缺省值配置, 是 ReferenceConfig 的缺省配置
  *
  * @export
  */
@@ -28,38 +28,38 @@ public class ConsumerConfig extends AbstractReferenceConfig {
     private static final long serialVersionUID = 2827274711143680600L;
 
     /**
-     * Whether to use the default protocol
+     * 是否为缺省协议，用于多协议
      */
     private Boolean isDefault;
 
     /**
-     * Networking framework client uses: netty, mina, etc.
+     * 协议的客户端实现类型，比如：dubbo协议的mina,netty等.
+     * dubbo协议缺省为netty
      */
     private String client;
 
     /**
-     * Consumer thread pool type: cached, fixed, limit, eager
+     * 服务消费者的线程池类型，可选：fixed/cached/limit(2.5.3以上)/eager(2.6.x以上), 默认fixed
      */
     private String threadpool;
 
     /**
-     * Consumer threadpool core thread size
+     * 服务消费者的线程池的核心线程数
      */
     private Integer corethreads;
 
     /**
-     * Consumer threadpool thread size
+     * 服务线程池大小(固定大小), 默认200
      */
     private Integer threads;
 
     /**
-     * Consumer threadpool queue size
+     * 线程池队列大小
      */
     private Integer queues;
 
     /**
-     * By default, a TCP long-connection communication is shared between the consumer process and the provider process.
-     * This property can be set to share multiple TCP long-connection communications. Note that only the dubbo protocol takes effect.
+     * 默认情况下，在消费方进程和提供方进程之间共享TCP长连接通信。可以将此属性设置为共享多个TCP长连接通信。请注意，只有dubbo协议才能生效.
      */
     private Integer shareconnections;
 

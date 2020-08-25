@@ -30,28 +30,30 @@ public abstract class AbstractMethodConfig extends AbstractConfig {
     private static final long serialVersionUID = 1L;
 
     /**
-     * The timeout for remote invocation in milliseconds
+     * 远程服务调用超时时间(毫秒), 默认1000ms
      */
     protected Integer timeout;
 
     /**
-     * The retry times
+     * 远程服务调用重试次数, 不包括第一次调用, 设置为0时表示不需要重试.
+     * 默认值为2
      */
     protected Integer retries;
 
     /**
-     * max concurrent invocations
+     * 每服务消费者每服务每方法最大并发调用数
      */
     protected Integer actives;
 
     /**
-     * The load balance
+     * 负载均衡策略, 可选：random、roundrobin、leastactive,
+     * 分别表示：随机，轮询，最少活跃调用. 默认 random
      */
     protected String loadbalance;
 
     /**
-     * Whether to async
-     * note that: it is an unreliable asynchronism that ignores return values and does not block threads.
+     * 是否异步执行, 这是一种不可靠的机制, 会忽略返回值并且不会阻塞线程.
+     * 默认false
      */
     protected Boolean async;
 
@@ -61,10 +63,7 @@ public abstract class AbstractMethodConfig extends AbstractConfig {
     protected Boolean sent;
 
     /**
-     * The name of mock class which gets called when a service fails to execute
-     * <p>
-     * note that: the mock doesn't support on the provider side，and the mock is executed when a non-business exception
-     * occurs after a remote service call
+     * 服务接口调用失败的Mock实现类, 只在出现非业务异常(比如超时、网络异常等)时执行, mock在提供者端不支持
      */
     protected String mock;
 
@@ -74,14 +73,12 @@ public abstract class AbstractMethodConfig extends AbstractConfig {
     protected String merger;
 
     /**
-     * Cache the return result with the call parameter as key, the following options are available: lru, threadlocal,
-     * jcache, etc.
+     * 以调用参数为key，缓存返回结果，可选：lru, threadlocal, jcache等
      */
     protected String cache;
 
     /**
-     * Whether JSR303 standard annotation validation is enabled or not, if enabled, annotations on method parameters will
-     * be validated
+     * 是否启用JSR303标准注解验证，如果启用(true)，将对方法参数上的注解进行校验
      */
     protected String validation;
 

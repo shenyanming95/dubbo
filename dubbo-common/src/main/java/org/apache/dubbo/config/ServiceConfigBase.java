@@ -44,7 +44,7 @@ public abstract class ServiceConfigBase<T> extends AbstractServiceConfig {
     private static final long serialVersionUID = 3033787999037024738L;
 
     /**
-     * The interface name of the exported service
+     * 服务接口名
      */
     protected String interfaceName;
 
@@ -54,22 +54,22 @@ public abstract class ServiceConfigBase<T> extends AbstractServiceConfig {
     protected Class<?> interfaceClass;
 
     /**
-     * The reference of the interface implementation
+     * 服务接口的实例对象
      */
     protected T ref;
 
     /**
-     * The service name
+     * 服务路径 (注意：1.0不支持自定义路径，总是使用接口名，如果有1.0调2.0，配置服务路径可能不兼容)
      */
     protected String path;
 
     /**
-     * The provider configuration
+     * 指定Provider
      */
     protected ProviderConfig provider;
 
     /**
-     * The providerIds
+     * 指定Provider的id, 即<dubbo:provider>的id属性
      */
     protected String providerIds;
 

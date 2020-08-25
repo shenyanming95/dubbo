@@ -33,7 +33,7 @@ import static org.apache.dubbo.config.Constants.ON_THROW_INSTANCE_KEY;
 import static org.apache.dubbo.config.Constants.ON_THROW_METHOD_KEY;
 
 /**
- * The method configuration
+ * 方法级配置
  *
  * @export
  */
@@ -42,7 +42,7 @@ public class MethodConfig extends AbstractMethodConfig {
     private static final long serialVersionUID = 884908855422675941L;
 
     /**
-     * The method name
+     * 方法名
      */
     private String name;
 
@@ -62,27 +62,27 @@ public class MethodConfig extends AbstractMethodConfig {
     private Boolean reliable;
 
     /**
-     * Thread limits for method invocations
+     * 每服务每方法最大使用线程数限制, 此属性只在<dubbo:method>作为<dubbo:service>子标签时有效
      */
     private Integer executes;
 
     /**
-     * If it's deprecated
+     * 服务方法是否过时，此属性只在<dubbo:method>作为<dubbo:service>子标签时有效
      */
     private Boolean deprecated;
 
     /**
-     * Whether to enable sticky
+     * 设置true 该接口上的所有方法使用同一个provider.如果需要更复杂的规则，请使用用路由. 默认false
      */
     private Boolean sticky;
 
     /**
-     * Whether need to return
+     * 方法调用是否需要返回值,async设置为true时才生效，如果设置为true，则返回future，或回调onreturn等方法，如果设置为false，则请求发送成功后直接返回Null
      */
     private Boolean isReturn;
 
     /**
-     * Callback instance when async-call is invoked
+     * 方法执行前拦截
      */
     private Object oninvoke;
 
@@ -102,17 +102,17 @@ public class MethodConfig extends AbstractMethodConfig {
     private String onreturnMethod;
 
     /**
-     * Callback instance when async-call has exception thrown
+     * 方法执行有异常拦截
      */
     private Object onthrow;
 
     /**
-     * Callback method when async-call has exception thrown
+     * 异步调用引发异常时的回调方法
      */
     private String onthrowMethod;
 
     /**
-     * The method arguments
+     * 方法参数
      */
     private List<ArgumentConfig> arguments;
 

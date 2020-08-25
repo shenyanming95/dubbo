@@ -30,7 +30,7 @@ import static org.apache.dubbo.common.utils.PojoUtils.updatePropertyIfAbsent;
 import static org.apache.dubbo.config.Constants.REGISTRIES_SUFFIX;
 
 /**
- * RegistryConfig
+ * 注册中心配置
  *
  * @export
  */
@@ -40,7 +40,8 @@ public class RegistryConfig extends AbstractConfig {
     private static final long serialVersionUID = 5508512956753757169L;
 
     /**
-     * Register center address
+     * 注册中心服务器地址, 同一个集群中的多个地址用逗号隔开.
+     * 如: ip:port,ip:port
      */
     private String address;
 
@@ -60,12 +61,13 @@ public class RegistryConfig extends AbstractConfig {
     private Integer port;
 
     /**
-     * Protocol for register center
+     * 注册中心地址协议, 支持dubbo, multicast, zookeeper, redis,
+     * consul, sofa, etcd, nacos...
      */
     private String protocol;
 
     /**
-     * Network transmission type
+     * 网络传输方式, 可选：mina, netty
      */
     private String transporter;
 
@@ -85,49 +87,52 @@ public class RegistryConfig extends AbstractConfig {
     private String zone;
 
     /**
-     * The group the services registry in
+     * 服务注册分组, 跨组的服务不会相互影响, 也无法相互调用, 用于环境隔离.
      */
     private String group;
 
     private String version;
 
     /**
-     * Request timeout in milliseconds for register center
+     * 注册中心请求超时时间, 单位为毫秒
      */
     private Integer timeout;
 
     /**
-     * Session timeout in milliseconds for register center
+     * 注册中心会话超时时间(毫秒), 用于检测提供者非正常断线后的脏数据,
+     * 比如用心跳检测的实现, 此时间就是心跳间隔, 不同注册中心实现不一样
      */
     private Integer session;
 
     /**
-     * File for saving register center dynamic list
+     * 使用文件缓存注册中心地址列表以及服务提供者列表, 应用重启时将基于这个文件恢复.
+     * 但是, 两个注册中心不能使用同一个file存储
      */
     private String file;
 
     /**
-     * Wait time before stop
+     * 停止时等待通知完成时间(毫秒)
      */
     private Integer wait;
 
     /**
-     * Whether to check if register center is available when boot up
+     * 注册中心不存在时，是否报错
      */
     private Boolean check;
 
     /**
-     * Whether to allow dynamic service to register on the register center
+     * 服务是否动态注册, 如果设为false, 注册后将显示为 disable 状态,
+     * 需要人工启用, 并且服务提供者停止时, 也不会自动取消注册, 需要人工注销.
      */
     private Boolean dynamic;
 
     /**
-     * Whether to export service on the register center
+     * 是否向注册中心注册服务，如果设为false, 只订阅而不注册
      */
     private Boolean register;
 
     /**
-     * Whether allow to subscribe service on the register center
+     * 是否向注册中心订阅服务, 如果设为false, 只会注册不会订阅
      */
     private Boolean subscribe;
 
@@ -142,13 +147,13 @@ public class RegistryConfig extends AbstractConfig {
     private Boolean isDefault;
 
     /**
-     * Simple the registry. both useful for provider and consumer
+     * 注册到注册中心的URL是否采用精简模式的（与低版本兼容）
      *
      * @since 2.7.0
      */
     private Boolean simplified;
     /**
-     * After simplify the registry, should add some parameter individually. just for provider.
+     * 当设置 simplified=true 时，此配置允许在默认参数外将额外的key放到URL中，格式："interface,key1,key2"
      * <p>
      * such as: extra-keys = A,b,c,d
      *

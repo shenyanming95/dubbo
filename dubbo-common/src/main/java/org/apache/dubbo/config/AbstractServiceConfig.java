@@ -36,22 +36,22 @@ public abstract class AbstractServiceConfig extends AbstractInterfaceConfig {
     private static final long serialVersionUID = 1L;
 
     /**
-     * The service version
+     * 服务版本号
      */
     protected String version;
 
     /**
-     * The service group
+     * 服务分组, 当一个接口有多个实现, 可以用分组区分
      */
     protected String group;
 
     /**
-     * whether the service is deprecated
+     * 服务是否过时，如果设为true，消费方引用时将打印服务过时警告error日志
      */
     protected Boolean deprecated = false;
 
     /**
-     * The time delay register service (milliseconds)
+     * 延迟注册服务时间(毫秒), 设置为-1时, 表示延迟到spring容器初始化完成时暴露服务.
      */
     protected Integer delay;
 
@@ -61,49 +61,50 @@ public abstract class AbstractServiceConfig extends AbstractInterfaceConfig {
     protected Boolean export;
 
     /**
-     * The service weight
+     * 服务权重
      */
     protected Integer weight;
 
     /**
-     * Document center
+     * 服务文档URL
      */
     protected String document;
 
     /**
-     * Whether to register as a dynamic service or not on register center, the value is true, the status will be enabled
-     * after the service registered,and it needs to be disabled manually; if you want to disable the service, you also need
-     * manual processing
+     * 服务是否动态注册，如果设为false，注册后将显示后disable状态，需人工启用，并且服务提供者停止时，也不会自动取消册，需人工禁用
      */
     protected Boolean dynamic = true;
 
     /**
-     * Whether to use token
+     * 令牌验证，为空表示不开启，如果为true，表示随机生成动态令牌，否则使用静态令牌，令牌的作用是防止消费者绕过注册中心直接访问，
+     * 保证注册中心的授权功能有效，如果使用点对点调用，需关闭令牌功能
      */
     protected String token;
 
     /**
-     * Whether to export access logs to logs
+     * 设为true，将向logger中输出访问日志，也可填写访问日志文件路径，直接把访问日志输出到指定文件
      */
     protected String accesslog;
 
     /**
-     * The protocol list the service will export with
-     * Also see {@link #protocolIds}, only one of them will work.
+     * 使用指定的协议暴露服务，在多协议时使用.
+     * 这个配置和{@link #protocolIds}效果一样, 但只有一个能生效
      */
     protected List<ProtocolConfig> protocols;
 
     /**
-     * The id list of protocols the service will export with
-     * Also see {@link #protocols}, only one of them will work.
+     * 使用指定的协议暴露服务，在多协议时使用，值为<dubbo:protocol>的id属性，多个协议ID用逗号分隔.
+     * 这个配置和{@link #protocols}效果一样, 但只有一个能生效
      */
     protected String protocolIds;
 
-    // max allowed execute times
+    /**
+     * 服务提供者每服务每方法最大可并行执行请求数, 默认为0
+     */
     private Integer executes;
 
     /**
-     * Whether to register
+     * 服务是否注册到注册中心
      */
     private Boolean register;
 

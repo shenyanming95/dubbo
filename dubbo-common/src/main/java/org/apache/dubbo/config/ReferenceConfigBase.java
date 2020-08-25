@@ -43,22 +43,22 @@ public abstract class ReferenceConfigBase<T> extends AbstractReferenceConfig {
     private static final long serialVersionUID = -5864351140409987595L;
 
     /**
-     * The interface name of the reference service
+     * 服务消费者的接口名称
      */
     protected String interfaceName;
 
     /**
-     * The interface class of the reference service
+     * 服务消费者的接口类
      */
     protected Class<?> interfaceClass;
 
     /**
-     * client type
+     * 客户端传输类型设置，如Dubbo协议的netty或mina
      */
     protected String client;
 
     /**
-     * The url for peer-to-peer invocation
+     * 点对点直连服务提供者地址，将绕过注册中心
      */
     protected String url;
 
@@ -68,7 +68,7 @@ public abstract class ReferenceConfigBase<T> extends AbstractReferenceConfig {
     protected ConsumerConfig consumer;
 
     /**
-     * Only the service provider of the specified protocol is invoked, and other protocols are ignored.
+     * 只调用指定协议的服务提供方，其它协议忽略
      */
     protected String protocol;
 

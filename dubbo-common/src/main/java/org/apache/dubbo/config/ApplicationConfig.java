@@ -48,7 +48,7 @@ import static org.apache.dubbo.config.Constants.TEST_ENVIRONMENT;
 
 
 /**
- * The application info
+ * 应用信息配置
  *
  * @export
  */
@@ -58,53 +58,53 @@ public class ApplicationConfig extends AbstractConfig {
     private static final long serialVersionUID = 5508512956753757169L;
 
     /**
-     * Application name
+     * 当前应用的名称, 用于注册中计算应用间的依赖关系
      */
     private String name;
 
     /**
-     * The application version
+     * 应用版本
      */
     private String version;
 
     /**
-     * Application owner
+     * 应用负责人
      */
     private String owner;
 
     /**
-     * Application's organization (BU)
+     * 应用所属组织信息
      */
     private String organization;
 
     /**
-     * Architecture layer
+     * 用于服务分层对应的架构, 如intl、china, 不同的架构使用不同的分层
      */
     private String architecture;
 
     /**
-     * Environment, e.g. dev, test or production
+     * 应用环境, 如dev、test、product
      */
     private String environment;
 
     /**
-     * Java compiler
+     * java字节码编译器, 用于动态类生成, 可选：jdk、javassist
      */
     private String compiler;
 
     /**
-     * The type of the log access
+     * 日志输出方式, 可选：slf4j、jcl、log4j、log4j2、jdk
      */
     private String logger;
 
     /**
-     * Registry centers
+     * 注册中心
      */
     private List<RegistryConfig> registries;
     private String registryIds;
 
     /**
-     * Monitor center
+     * 监控中心
      */
     private MonitorConfig monitor;
 
