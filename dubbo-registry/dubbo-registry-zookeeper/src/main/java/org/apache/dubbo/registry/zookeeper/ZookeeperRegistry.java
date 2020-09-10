@@ -56,8 +56,11 @@ import static org.apache.dubbo.common.constants.RegistryConstants.PROVIDERS_CATE
 import static org.apache.dubbo.common.constants.RegistryConstants.ROUTERS_CATEGORY;
 
 /**
- * ZookeeperRegistry
- *
+ * 使用Zookeeper作为注册中心, 它会注册4个目录：
+ * 1, /dubbo/service/providers —— 存放服务提供者的URL元数据;
+ * 2, /dubbo/service/consumer —— 存放服务消费者的URL元数据;
+ * 3, /dubbo/service/routers —— 存放消费者的路由策略URL元数据;
+ * 4, /dubbo/service/configurators —— 存放服务提供者动态配置URL元数据
  */
 public class ZookeeperRegistry extends FailbackRegistry {
 
@@ -141,9 +144,15 @@ public class ZookeeperRegistry extends FailbackRegistry {
         }
     }
 
+    /**
+     * 订阅Zookeeper上的url变化
+     * @param url 订阅的url
+     * @param listener 监听器
+     */
     @Override
     public void doSubscribe(final URL url, final NotifyListener listener) {
         try {
+            // 订阅所有数据
             if (ANY_VALUE.equals(url.getServiceInterface())) {
                 String root = toRootPath();
                 ConcurrentMap<NotifyListener, ChildListener> listeners = zkListeners.computeIfAbsent(url, k -> new ConcurrentHashMap<>());

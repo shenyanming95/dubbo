@@ -21,6 +21,9 @@ import org.apache.dubbo.common.URL;
 import java.util.List;
 import java.util.concurrent.Executor;
 
+/**
+ * dubbo 封装的操作zookeeper的接口, 新版本的dubbo统一使用Curator框架来操作Zookeeper.
+ */
 public interface ZookeeperClient {
 
     void create(String path, boolean ephemeral);

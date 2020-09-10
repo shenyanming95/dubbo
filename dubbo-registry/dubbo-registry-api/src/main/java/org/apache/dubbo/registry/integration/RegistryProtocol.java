@@ -186,10 +186,14 @@ public class RegistryProtocol implements Protocol {
                 registered));
     }
 
+    /**
+     * 注册服务到远程注册中心
+     */
     @Override
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
+        // 根据 ServiceConfig 配置获取要注册到注册中心的url
         URL registryUrl = getRegistryUrl(originInvoker);
-        // url to export locally
+        // 注册到本地的url
         URL providerUrl = getProviderUrl(originInvoker);
 
         // Subscribe the override data
@@ -199,18 +203,19 @@ public class RegistryProtocol implements Protocol {
         final URL overrideSubscribeUrl = getSubscribedOverrideUrl(providerUrl);
         final OverrideListener overrideSubscribeListener = new OverrideListener(overrideSubscribeUrl, originInvoker);
         overrideListeners.put(overrideSubscribeUrl, overrideSubscribeListener);
-
         providerUrl = overrideUrlWithConfig(providerUrl, overrideSubscribeListener);
-        //export invoker
+
+        // 本地暴露, 其实就是启动服务, 例如启动Netty4的Server
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker, providerUrl);
 
-        // url to registry
+        // 根据URL获取注册中心 Registry
         final Registry registry = getRegistry(originInvoker);
         final URL registeredProviderUrl = getUrlToRegistry(providerUrl, registryUrl);
 
         // decide if we need to delay publish
         boolean register = providerUrl.getParameter(REGISTER_KEY, true);
         if (register) {
+            // 注册服务
             register(registryUrl, registeredProviderUrl);
         }
 
@@ -224,6 +229,7 @@ public class RegistryProtocol implements Protocol {
         // Deprecated! Subscribe to override rules in 2.6.x or before.
         registry.subscribe(overrideSubscribeUrl, overrideSubscribeListener);
 
+        // 监听器回调
         notifyExport(exporter);
         //Ensure that a new exporter instance is returned every time export
         return new DestroyableExporter<>(exporter);
@@ -252,6 +258,7 @@ public class RegistryProtocol implements Protocol {
 
         return (ExporterChangeableWrapper<T>) bounds.computeIfAbsent(key, s -> {
             Invoker<?> invokerDelegate = new InvokerDelegate<>(originInvoker, providerUrl);
+            // 默认通过DubboProtocol暴露服务, 会启动一个Server, 监听客户端的请求..
             return new ExporterChangeableWrapper<>((Exporter<T>) protocol.export(invokerDelegate), originInvoker);
         });
     }

@@ -24,6 +24,9 @@ import org.apache.dubbo.common.utils.CollectionUtils;
 
 import java.util.List;
 
+/**
+ * 对{@link Registry}进行一层包装, 用于处理监听器回调.
+ */
 public class ListenerRegistryWrapper implements Registry {
     private static final Logger logger = LoggerFactory.getLogger(ListenerRegistryWrapper.class);
 

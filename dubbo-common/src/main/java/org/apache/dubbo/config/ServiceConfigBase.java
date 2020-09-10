@@ -74,7 +74,7 @@ public abstract class ServiceConfigBase<T> extends AbstractServiceConfig {
     protected String providerIds;
 
     /**
-     * whether it is a GenericService
+     * 是否是通用的服务配置
      */
     protected volatile String generic;
 

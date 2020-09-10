@@ -26,7 +26,6 @@ public interface RegistryServiceListener {
 
     }
 
-
     default void onUnregister(URL url) {
 
     }

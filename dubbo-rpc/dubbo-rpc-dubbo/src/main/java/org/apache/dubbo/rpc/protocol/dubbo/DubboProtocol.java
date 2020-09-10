@@ -299,12 +299,13 @@ public class DubboProtocol extends AbstractProtocol {
 
             }
         }
-
+        // dubbo provider启动服务端
         openServer(url);
         optimizeSerialization(url);
 
         return exporter;
     }
+
 
     private void openServer(URL url) {
         // find server.
@@ -317,6 +318,7 @@ public class DubboProtocol extends AbstractProtocol {
                 synchronized (this) {
                     server = serverMap.get(key);
                     if (server == null) {
+                        // 如果不存在ProtocolServer, 那就创建一个
                         serverMap.put(key, createServer(url));
                     }
                 }

@@ -897,7 +897,7 @@ public class DubboBootstrap extends GenericEventListener {
             if (logger.isInfoEnabled()) {
                 logger.info(NAME + " is starting...");
             }
-            // 1. export Dubbo Services
+            // 1. 暴露dubbo服务
             exportServices();
 
             // Not only provider register

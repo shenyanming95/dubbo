@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 /**
- * Invocation. (API, Prototype, NonThreadSafe)
+ * 持有调用过程中的变量，比如方法名，参数等
  *
  * @serial Don't change the class name and package name.
  * @see org.apache.dubbo.rpc.Invoker#invoke(Invocation)
@@ -33,30 +33,29 @@ public interface Invocation {
     String getTargetServiceUniqueName();
 
     /**
-     * get method name.
+     * 获取方法名
      *
-     * @return method name.
-     * @serial
+     * @return 方法名
      */
     String getMethodName();
 
 
     /**
-     * get the interface name
-     * @return
+     * 获取接口名
+     *
+     * @return 方法所在的接口名
      */
     String getServiceName();
 
     /**
-     * get parameter types.
+     * 获取方法参数的类型数组
      *
-     * @return parameter types.
-     * @serial
+     * @return 参数类型数组
      */
     Class<?>[] getParameterTypes();
 
     /**
-     * get parameter's signature, string representation of parameter types.
+     * 获取方法参数的签名，参数类型的字符串表示形式。
      *
      * @return parameter's signature
      */
@@ -67,18 +66,16 @@ public interface Invocation {
     }
 
     /**
-     * get arguments.
+     * 获取参数
      *
      * @return arguments.
-     * @serial
      */
     Object[] getArguments();
 
     /**
-     * get attachments.
+     *获取附件
      *
      * @return attachments.
-     * @serial
      */
     Map<String, String> getAttachments();
 
@@ -127,7 +124,6 @@ public interface Invocation {
      * get the invoker in current context.
      *
      * @return invoker.
-     * @transient
      */
     Invoker<?> getInvoker();
 

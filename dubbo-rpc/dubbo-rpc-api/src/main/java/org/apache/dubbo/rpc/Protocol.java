@@ -24,7 +24,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Protocol. (API/SPI, Singleton, ThreadSafe)
+ *  Invoker 暴露和引用的主功能入口，它负责 Invoker 的生命周期管理
  */
 @SPI("dubbo")
 public interface Protocol {

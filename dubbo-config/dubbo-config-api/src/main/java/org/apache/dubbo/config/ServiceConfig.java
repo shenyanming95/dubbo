@@ -185,11 +185,14 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
         dispatch(new ServiceConfigUnexportedEvent(this));
     }
 
+    /**
+     * 一个{@link ServiceConfig}表示一个 dubbo api接口, 通过此方法将该API暴露出去
+     */
     public synchronized void export() {
         if (!shouldExport()) {
+            // 除非显式指定不暴露, 不然默认的服务都会暴露出去
             return;
         }
-
         if (bootstrap == null) {
             bootstrap = DubboBootstrap.getInstance();
             bootstrap.initialize();
@@ -206,11 +209,13 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
         serviceMetadata.setTarget(getRef());
 
         if (shouldDelay()) {
+            // 如果配置了延迟发布, 就放到线程池中
             DELAY_EXPORT_EXECUTOR.schedule(this::doExport, getDelay(), TimeUnit.MILLISECONDS);
         } else {
+            // 否则立即发布
             doExport();
         }
-
+        // 广播 ServiceConfigExportedEvent 事件, 新版dubbo提供监听器功能
         exported();
     }
 
@@ -292,13 +297,16 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
 
     protected synchronized void doExport() {
         if (unexported) {
+            // 如果此服务不允许发布了, 然后用户又调用了export()方法去发布, 就报错
             throw new IllegalStateException("The service " + interfaceClass.getName() + " has already unexported!");
         }
         if (exported) {
+            // 已经发布了, 那就直接返回了
             return;
         }
+        // 修改标识, 为已发布
         exported = true;
-
+        // TODO 新版dubbo使用path来标识服务吗？
         if (StringUtils.isEmpty(path)) {
             path = interfaceName;
         }
@@ -307,6 +315,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     private void doExportUrls() {
+        // TODO 新版本Dubbo, 在本地维护 Provider 和 Consumer
         ServiceRepository repository = ApplicationModel.getServiceRepository();
         ServiceDescriptor serviceDescriptor = repository.registerService(getInterfaceClass());
         repository.registerProvider(
@@ -316,30 +325,31 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
                 this,
                 serviceMetadata
         );
-
+        // 配置and校验要注册的URL
         List<URL> registryURLs = ConfigValidationUtils.loadRegistries(this, true);
-
+        // 获取多个协议, 结合协议暴露服务
         for (ProtocolConfig protocolConfig : protocols) {
             String pathKey = URL.buildKey(getContextPath(protocolConfig)
                     .map(p -> p + "/" + path)
                     .orElse(path), group, version);
-            // In case user specified path, register service one more time to map it to path.
+            // 如果用户指定了路径，请再注册一次服务以将其映射到路径。
             repository.registerService(pathKey, interfaceClass);
-            // TODO, uncomment this line once service key is unified
             serviceMetadata.setServiceKey(pathKey);
+            // 依照每个协议暴露服务
             doExportUrlsFor1Protocol(protocolConfig, registryURLs);
         }
     }
 
     private void doExportUrlsFor1Protocol(ProtocolConfig protocolConfig, List<URL> registryURLs) {
+        // 获取协议名称, 如果协议为空, 默认使用dubbo协议
         String name = protocolConfig.getName();
         if (StringUtils.isEmpty(name)) {
             name = DUBBO;
         }
-
-        Map<String, String> map = new HashMap<String, String>();
+        // map用于放置参数
+        Map<String, String> map = new HashMap<>();
         map.put(SIDE_KEY, PROVIDER_SIDE);
-
+        // 将配置类添加到map中
         ServiceConfig.appendRuntimeParameters(map);
         AbstractConfig.appendParameters(map, getMetrics());
         AbstractConfig.appendParameters(map, getApplication());
@@ -353,6 +363,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
         if (metadataReportConfig != null && metadataReportConfig.isValid()) {
             map.putIfAbsent(METADATA_KEY, REMOTE_METADATA_STORAGE_TYPE);
         }
+        // 将 MethodConfig 对象数组，添加到map集合中
         if (CollectionUtils.isNotEmpty(getMethods())) {
             for (MethodConfig method : getMethods()) {
                 AbstractConfig.appendParameters(map, method, method.getName());
@@ -360,9 +371,11 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
                 if (map.containsKey(retryKey)) {
                     String retryValue = map.remove(retryKey);
                     if ("false".equals(retryValue)) {
+                        // 当 配置了MethodConfig.retry = false时，强制禁用重试
                         map.put(method.getName() + ".retries", "0");
                     }
                 }
+                // 将 ArgumentConfig 对象数组，添加到map集合中
                 List<ArgumentConfig> arguments = method.getArguments();
                 if (CollectionUtils.isNotEmpty(arguments)) {
                     for (ArgumentConfig argument : arguments) {
@@ -427,7 +440,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
             }
         }
 
-        /**
+        /*
          * Here the token value configured by the provider is used to assign the value to ServiceConfig#token
          */
         if(ConfigUtils.isEmpty(token) && provider != null) {
@@ -444,12 +457,13 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
         //init serviceMetadata attachments
         serviceMetadata.getAttachments().putAll(map);
 
-        // export service
+        // 获取配置的host和port信息, 然后创建一个 dubbo 自己的 URL对象
         String host = findConfigedHosts(protocolConfig, registryURLs, map);
         Integer port = findConfigedPorts(protocolConfig, name, map);
         URL url = new URL(name, host, port, getContextPath(protocolConfig).map(p -> p + "/" + path).orElse(path), map);
 
         // You can customize Configurator to append extra parameters
+        // 可以通过dubbo spi机制自定义自己的配置, http://dubbo.apache.org/zh-cn/docs/user/demos/config-rule.html
         if (ExtensionLoader.getExtensionLoader(ConfiguratorFactory.class)
                 .hasExtension(url.getProtocol())) {
             url = ExtensionLoader.getExtensionLoader(ConfiguratorFactory.class)
@@ -457,11 +471,12 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
         }
 
         String scope = url.getParameter(SCOPE_KEY);
-        // don't export when none is configured
+        // 如果scope配置为none, 表示不需要暴露
         if (!SCOPE_NONE.equalsIgnoreCase(scope)) {
 
             // export to local if the config is not remote (export to remote only when config is remote)
             if (!SCOPE_REMOTE.equalsIgnoreCase(scope)) {
+                // 本地暴露, 发布到jvm
                 exportLocal(url);
             }
             // export to remote if the config is not local (export to local only when config is local)
@@ -490,20 +505,28 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
                         if (StringUtils.isNotEmpty(proxy)) {
                             registryURL = registryURL.addParameter(PROXY_KEY, proxy);
                         }
-
+                        // 通过ProxyFactory获取Invoker, 默认使用的是JavassistProxyFactory,
+                        // 一个Invoker是一个dubbo api接口, 它可以执行多个方法.
+                        // 目前dubbo是用字符串是拼接java代码, 然后生成代理, 这个需要去理解下Javassist
                         Invoker<?> invoker = PROXY_FACTORY.getInvoker(ref, (Class) interfaceClass, registryURL.addParameterAndEncoded(EXPORT_KEY, url.toFullString()));
+                        // 对Invoker和ServiceConfig进行一层包裹.
                         DelegateProviderMetaDataInvoker wrapperInvoker = new DelegateProviderMetaDataInvoker(invoker, this);
-
+                        // 开始暴露服务, PROTOCOL是SPI扩展机制得到的代理类, 它的代码是动态生成的, 所以要到ExtensionLoader去查找, 大概代码为：
+                        // String extName = ( url.getProtocol() == null ? "dubbo" : url.getProtocol() );
+                        // Protocol extension = (Protocol)ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(extName);
+                        // return extension.export(arg0);
+                        // 通过获取协议, 作为扩展名, 能获取SPI实例, 最终通过 RegistryProtocol 注册服务
                         Exporter<?> exporter = PROTOCOL.export(wrapperInvoker);
                         exporters.add(exporter);
                     }
                 } else {
+                    // 当配置了url属性, dubbo消费者直连dubbo服务提供者, 绕过了注册中心
+                    // http://dubbo.apache.org/zh-cn/docs/user/demos/explicit-target.html
                     if (logger.isInfoEnabled()) {
                         logger.info("Export dubbo service " + interfaceClass.getName() + " to url " + url);
                     }
                     Invoker<?> invoker = PROXY_FACTORY.getInvoker(ref, (Class) interfaceClass, url);
                     DelegateProviderMetaDataInvoker wrapperInvoker = new DelegateProviderMetaDataInvoker(invoker, this);
-
                     Exporter<?> exporter = PROTOCOL.export(wrapperInvoker);
                     exporters.add(exporter);
                 }

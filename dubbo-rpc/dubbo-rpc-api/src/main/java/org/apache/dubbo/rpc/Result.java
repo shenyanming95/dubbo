@@ -32,8 +32,7 @@ import java.util.function.Function;
 
 /**
  * (API, Prototype, NonThreadSafe)
- *
- * An RPC {@link Result}.
+ * 持有调用过程中返回值，异常等
  *
  * Known implementations are:
  * 1. {@link AsyncRpcResult}, it's a {@link CompletionStage} whose underlying value signifies the return value of an RPC call.
