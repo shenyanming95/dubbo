@@ -25,7 +25,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Provide helpful information for {@link ExtensionLoader} to inject dependency extension instance.
+ * 提供有用的信息以供{@link ExtensionLoader}注入依赖项扩展实例
  *
  * @see ExtensionLoader
  * @see URL
@@ -35,23 +35,19 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE, ElementType.METHOD})
 public @interface Adaptive {
     /**
-     * Decide which target extension to be injected. The name of the target extension is decided by the parameter passed
-     * in the URL, and the parameter names are given by this method.
+     * 确定要注入的扩展类实例, 目标扩展名由{@link URL}中传递的参数决定, 参数名称由此方法来决定.
+     * 如果从{@link URL}中找不到指定的参数, 则使用其扩展类接口中的{@link SPI}中指定.
      * <p>
-     * If the specified parameters are not found from {@link URL}, then the default extension will be used for
-     * dependency injection (specified in its interface's {@link SPI}).
+     * 比如说, 此方法设置参数为: <code>String[] {"key1", "key2"}</code>:
+     * 1.从{@link URL}找参数名为"key1"的参数, 用它的参数值作为扩展类的名称;
+     * 2.如果找不到"key1"的参数, 转向找"key2";
+     * 3.如果"key2"也找不到, 使用扩展类{@link SPI}中指定的默认扩展名称;
+     * 4.若{@link SPI}也没有指定, 那么使用生成出来的代理调用方法时就会抛出异常{@link IllegalStateException}.
      * <p>
-     * For example, given <code>String[] {"key1", "key2"}</code>:
-     * <ol>
-     * <li>find parameter 'key1' in URL, use its value as the extension's name</li>
-     * <li>try 'key2' for extension's name if 'key1' is not found (or its value is empty) in URL</li>
-     * <li>use default extension if 'key2' doesn't exist either</li>
-     * <li>otherwise, throw {@link IllegalStateException}</li>
-     * </ol>
-     * If the parameter names are empty, then a default parameter name is generated from interface's
-     * class name with the rule: divide classname from capital char into several parts, and separate the parts with
-     * dot '.', for example, for {@code org.apache.dubbo.xxx.YyyInvokerWrapper}, the generated name is
-     * <code>String[] {"yyy.invoker.wrapper"}</code>.
+     * 如果此方法参数名称为空(即为空数组), 则会从接口的类名称生成默认参数名称, 做法为：
+     * 将类全名按照大写字符分隔, 再用"."合并为一个完整的字符串, 例如：
+     * {@code org.apache.dubbo.xxx.YyyInvokerWrapper} 会生成 "yyy.invoker.wrapper",
+     * 然后再以这个为依据去{@link URL}找对应的参数
      *
      * @return parameter names in URL
      */
