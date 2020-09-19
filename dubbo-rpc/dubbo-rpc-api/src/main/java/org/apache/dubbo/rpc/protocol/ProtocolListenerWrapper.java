@@ -37,7 +37,9 @@ import static org.apache.dubbo.common.constants.CommonConstants.EXPORTER_LISTENE
 import static org.apache.dubbo.common.constants.CommonConstants.INVOKER_LISTENER_KEY;
 
 /**
- * ListenerProtocol
+ * dubbo对{@link Protocol}的一层包装, 它会配置在文件 org.apache.dubbo.rpc.Protocol 中,
+ * 这样通过{@link ExtensionLoader}加载扩展类实例时, 会判断该类是一个包装类, 从而用它将真正的
+ * {@link Protocol}包装起来, 然后返回这个类.补充一句, 这个类会被{@link ProtocolFilterWrapper}包装起来.
  */
 @Activate(order = 200)
 public class ProtocolListenerWrapper implements Protocol {
@@ -59,8 +61,11 @@ public class ProtocolListenerWrapper implements Protocol {
     @Override
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
         if (UrlUtils.isRegistry(invoker.getUrl())) {
+            // 如果发现URL使用的协议是Registry, 则直接调用实际的Protocol去暴露服务.
             return protocol.export(invoker);
         }
+        // 非Registry协议, 先调用实际的Protocol去暴露服务, 然后返回一个包含多个监听器ExporterListener的ListenerExporterWrapper.
+        // 这些监听器ExporterListener可以在服务取消暴露的时候回调事件.
         return new ListenerExporterWrapper<T>(protocol.export(invoker),
                 Collections.unmodifiableList(ExtensionLoader.getExtensionLoader(ExporterListener.class)
                         .getActivateExtension(invoker.getUrl(), EXPORTER_LISTENER_KEY)));

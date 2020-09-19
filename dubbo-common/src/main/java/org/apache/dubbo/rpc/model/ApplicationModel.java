@@ -33,24 +33,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * singleton or static (by itself totally static or uses some static fields). So the instances
  * returned from them are of process scope. If you want to support multiple dubbo servers in one
  * single process, you may need to refactor those three classes.
- *
- * Represent a application which is using Dubbo and store basic metadata info for using
- * during the processing of RPC invoking.
  * <p>
- * ApplicationModel includes many ProviderModel which is about published services
- * and many Consumer Model which is about subscribed services.
- * <p>
- *
+ * ApplicationModel代表一个正在使用Dubbo并存储基本元数据信息以在RPC调用处理期间使用的应用程序,
+ * 它包括许多有关已发布服务的ProviderModel和许多有关已订阅服务的消费者模型.
  */
 
 public class ApplicationModel {
+
     protected static final Logger LOGGER = LoggerFactory.getLogger(ApplicationModel.class);
     public static final String NAME = "application";
-
     private static AtomicBoolean INIT_FLAG = new AtomicBoolean(false);
 
     public static void init() {
+        // CAS保证线程安全性
         if (INIT_FLAG.compareAndSet(false, true)) {
+            // 获取 ApplicationInitListener 监听器实现, 回调
             ExtensionLoader<ApplicationInitListener> extensionLoader = ExtensionLoader.getExtensionLoader(ApplicationInitListener.class);
             Set<String> listenerNames = extensionLoader.getSupportedExtensions();
             for (String listenerName : listenerNames) {

@@ -30,15 +30,13 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * This model is bound to your reference's configuration, for example, group, version or method level configuration.
+ * 此模型绑定到参考的配置, 例如组、版本、方法级别的配置.
  */
 public class ConsumerModel {
     private String serviceKey;
     private final ServiceDescriptor serviceModel;
     private final ReferenceConfigBase<?> referenceConfig;
-
     private Object proxyObject;
-
     private Map<String, AsyncMethodInfo> methodConfigs = new HashMap<>();
 
     /**
@@ -71,7 +69,6 @@ public class ConsumerModel {
 
     /**
      * Return the proxy object used by called while creating instance of ConsumerModel
-     * @return
      */
     public Object getProxyObject() {
         return proxyObject;

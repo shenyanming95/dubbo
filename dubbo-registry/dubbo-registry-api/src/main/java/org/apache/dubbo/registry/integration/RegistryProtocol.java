@@ -113,7 +113,7 @@ import static org.apache.dubbo.rpc.cluster.Constants.WARMUP_KEY;
 import static org.apache.dubbo.rpc.cluster.Constants.WEIGHT_KEY;
 
 /**
- * RegistryProtocol
+ * 用来注册服务到注册中心的协议
  */
 public class RegistryProtocol implements Protocol {
     public static final String[] DEFAULT_REGISTER_PROVIDER_KEYS = {
@@ -133,6 +133,7 @@ public class RegistryProtocol implements Protocol {
     //To solve the problem of RMI repeated exposure port conflicts, the services that have been exposed are no longer exposed.
     //providerurl <--> exporter
     private final ConcurrentMap<String, ExporterChangeableWrapper<?>> bounds = new ConcurrentHashMap<>();
+    // 这个Protocol会在ExtensionLoader中被注入, 设置的是 Protocol$Adaptive, 它会根据 url 的参数值动态选择不同的扩展类实例.
     private Protocol protocol;
     private RegistryFactory registryFactory;
     private ProxyFactory proxyFactory;
@@ -174,6 +175,7 @@ public class RegistryProtocol implements Protocol {
     }
 
     private void register(URL registryUrl, URL registeredProviderUrl) {
+        // 获取注册中心Registry实例, 一般使用的是 ZookeeperRegistry
         Registry registry = registryFactory.getRegistry(registryUrl);
         registry.register(registeredProviderUrl);
     }
@@ -196,7 +198,7 @@ public class RegistryProtocol implements Protocol {
         // 注册到本地的url
         URL providerUrl = getProviderUrl(originInvoker);
 
-        // Subscribe the override data
+        // 使用 OverrideListener 对象，订阅配置规则
         // FIXME When the provider subscribes, it will affect the scene : a certain JVM exposes the service and call
         //  the same service. Because the subscribed is cached key with the name of the service, it causes the
         //  subscription information to cover.
@@ -208,11 +210,11 @@ public class RegistryProtocol implements Protocol {
         // 本地暴露, 其实就是启动服务, 例如启动Netty4的Server
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker, providerUrl);
 
-        // 根据URL获取注册中心 Registry
+        // 根据URL获取注册中心 Registry 实例
         final Registry registry = getRegistry(originInvoker);
         final URL registeredProviderUrl = getUrlToRegistry(providerUrl, registryUrl);
 
-        // decide if we need to delay publish
+        // 从url中获取是否需要立即注册
         boolean register = providerUrl.getParameter(REGISTER_KEY, true);
         if (register) {
             // 注册服务
@@ -221,7 +223,6 @@ public class RegistryProtocol implements Protocol {
 
         // register stated url on provider model
         registerStatedUrl(registryUrl, registeredProviderUrl, register);
-
 
         exporter.setRegisterUrl(registeredProviderUrl);
         exporter.setSubscribeUrl(overrideSubscribeUrl);

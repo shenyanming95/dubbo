@@ -24,36 +24,31 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- *  Invoker 暴露和引用的主功能入口，它负责 Invoker 的生命周期管理
+ * {@link Invoker}暴露和引用的功能入口, 负责{@link Invoker} 的生命周期管理
  */
 @SPI("dubbo")
 public interface Protocol {
 
     /**
-     * Get default port when user doesn't config the port.
-     *
-     * @return default port
+     * 获取默认的端口号
      */
     int getDefaultPort();
 
     /**
-     * Export service for remote invocation: <br>
-     * 1. Protocol should record request source address after receive a request:
-     * RpcContext.getContext().setRemoteAddress();<br>
-     * 2. export() must be idempotent, that is, there's no difference between invoking once and invoking twice when
-     * export the same URL<br>
-     * 3. Invoker instance is passed in by the framework, protocol needs not to care <br>
+     * 暴露用于远程调用的服务：
+     * 1.Protocol在收到一个请求Request后, 需要记录请求Request的源地址:RpcContext.getContext().setRemoteAddress();
+     * 2.此方法必须保证是幂等的, 同一个URL只会导出一次;
+     * 3.{@link Invoker}由框架传进, Protocol无需关心
      *
-     * @param <T>     Service type
-     * @param invoker Service invoker
-     * @return exporter reference for exported service, useful for unexport the service later
-     * @throws RpcException thrown when error occurs during export the service, for example: port is occupied
+     * @param <T>     服务类型
+     * @param invoker 服务invoker实例
+     * @return 已导出服务的引用, 一般可以用在取消导出
      */
     @Adaptive
     <T> Exporter<T> export(Invoker<T> invoker) throws RpcException;
 
     /**
-     * Refer a remote service: <br>
+     * 引用远程服务：
      * 1. When user calls `invoke()` method of `Invoker` object which's returned from `refer()` call, the protocol
      * needs to correspondingly execute `invoke()` method of `Invoker` object <br>
      * 2. It's protocol's responsibility to implement `Invoker` which's returned from `refer()`. Generally speaking,
@@ -71,17 +66,15 @@ public interface Protocol {
     <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException;
 
     /**
-     * Destroy protocol: <br>
-     * 1. Cancel all services this protocol exports and refers <br>
-     * 2. Release all occupied resources, for example: connection, port, etc. <br>
-     * 3. Protocol can continue to export and refer new service even after it's destroyed.
+     * 销毁Protocol：
+     * 1.取消由此Protocol导出和引用的所有服务
+     * 2.释放所有占用的资源, 如连接、端口...
+     * 3.即使Protocol被销毁, Protocol也可以继续导出并引用新服务
      */
     void destroy();
 
     /**
-     * Get all servers serving this protocol
-     *
-     * @return
+     * 获取所有使用此Protocol的服务器
      */
     default List<ProtocolServer> getServers() {
         return Collections.emptyList();

@@ -44,12 +44,16 @@ import org.apache.dubbo.rpc.cluster.Cluster;
 import org.apache.dubbo.rpc.cluster.directory.StaticDirectory;
 import org.apache.dubbo.rpc.cluster.support.ClusterUtils;
 import org.apache.dubbo.rpc.cluster.support.registry.ZoneAwareCluster;
+import org.apache.dubbo.rpc.cluster.support.wrapper.MockClusterInvoker;
 import org.apache.dubbo.rpc.model.ApplicationModel;
 import org.apache.dubbo.rpc.model.AsyncMethodInfo;
 import org.apache.dubbo.rpc.model.ConsumerModel;
 import org.apache.dubbo.rpc.model.ServiceDescriptor;
 import org.apache.dubbo.rpc.model.ServiceRepository;
+import org.apache.dubbo.rpc.protocol.ProtocolFilterWrapper;
+import org.apache.dubbo.rpc.protocol.ProtocolListenerWrapper;
 import org.apache.dubbo.rpc.protocol.injvm.InjvmProtocol;
+import org.apache.dubbo.rpc.proxy.javassist.JavassistProxyFactory;
 import org.apache.dubbo.rpc.service.GenericService;
 import org.apache.dubbo.rpc.support.ProtocolUtils;
 
@@ -95,50 +99,40 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
     public static final Logger logger = LoggerFactory.getLogger(ReferenceConfig.class);
 
     /**
-     * The {@link Protocol} implementation with adaptive functionality,it will be different in different scenarios.
-     * A particular {@link Protocol} implementation is determined by the protocol attribute in the {@link URL}.
-     * For example:
-     *
-     * <li>when the url is registry://224.5.6.7:1234/org.apache.dubbo.registry.RegistryService?application=dubbo-sample,
-     * then the protocol is <b>RegistryProtocol</b></li>
-     *
-     * <li>when the url is dubbo://224.5.6.7:1234/org.apache.dubbo.config.api.DemoService?application=dubbo-sample, then
-     * the protocol is <b>DubboProtocol</b></li>
-     * <p>
-     * Actually，when the {@link ExtensionLoader} init the {@link Protocol} instants,it will automatically wraps two
-     * layers, and eventually will get a <b>ProtocolFilterWrapper</b> or <b>ProtocolListenerWrapper</b>
+     * 具备自适应功能的{@link Protocol}在不同的情况有所不同, 由{@link URL}中的protocol属性确定其具体实现, 比如说：
+     * 1.url=registry://224.5.6.7:1234/org.apache.dubbo.registry.RegistryService?application=dubbo-sample, protocol=RegistryProtocol
+     * 2.url=dubbo://224.5.6.7:1234/org.apache.dubbo.config.api.DemoService?application=dubbo-sample, protocol=DubboProtocol
+     * 实际上, 当{@link ExtensionLoader}初始化{@link Protocol}实例, 它会自动包裹两层, 实际上获取一个{@link ProtocolFilterWrapper}或{@link ProtocolListenerWrapper}
      */
     private static final Protocol REF_PROTOCOL = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();
 
     /**
-     * The {@link Cluster}'s implementation with adaptive functionality, and actually it will get a {@link Cluster}'s
-     * specific implementation who is wrapped with <b>MockClusterInvoker</b>
+     * 实现同样具有自适应功能, 根据url参数选择不同实现, 其实例会被包裹成{@link MockClusterInvoker}
      */
     private static final Cluster CLUSTER = ExtensionLoader.getExtensionLoader(Cluster.class).getAdaptiveExtension();
 
     /**
-     * A {@link ProxyFactory} implementation that will generate a reference service's proxy,the JavassistProxyFactory is
-     * its default implementation
+     * 用于生成实际服务的代理类, 默认实现是{@link JavassistProxyFactory}
      */
     private static final ProxyFactory PROXY_FACTORY = ExtensionLoader.getExtensionLoader(ProxyFactory.class).getAdaptiveExtension();
 
     /**
-     * The interface proxy reference
+     * 实际服务的实现类
      */
     private transient volatile T ref;
 
     /**
-     * The invoker of the reference service
+     *上面这个实现类对应的 Invoker 实现
      */
     private transient volatile Invoker<?> invoker;
 
     /**
-     * The flag whether the ReferenceConfig has been initialized
+     * 标识此配置类是否已经初始化
      */
     private transient volatile boolean initialized;
 
     /**
-     * whether this ReferenceConfig has been destroyed
+     * 标识此配置类是否已经销毁
      */
     private transient volatile boolean destroyed;
 
@@ -197,6 +191,9 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
         this.services = services;
     }
 
+    /**
+     * 获取实际服务接口实现类的代理类
+     */
     public synchronized T get() {
         if (destroyed) {
             throw new IllegalStateException("The invoker of ReferenceConfig(" + url + ") has already destroyed!");
@@ -227,6 +224,9 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
         dispatch(new ReferenceConfigDestroyedEvent(this));
     }
 
+    /**
+     * 初始化代理类
+     */
     public synchronized void init() {
         if (initialized) {
             return;

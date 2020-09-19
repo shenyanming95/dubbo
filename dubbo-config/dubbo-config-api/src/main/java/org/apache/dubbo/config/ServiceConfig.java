@@ -111,15 +111,18 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
     public static final Logger logger = LoggerFactory.getLogger(ServiceConfig.class);
 
     /**
-     * A random port cache, the different protocols who has no port specified have different random port
+     * 随机端口缓存, 未指定端口的不同协议具有不同的随机端口
      */
     private static final Map<String, Integer> RANDOM_PORT_MAP = new HashMap<String, Integer>();
 
     /**
-     * A delayed exposure service timer
+     * 用于延迟导出服务的线程池
      */
     private static final ScheduledExecutorService DELAY_EXPORT_EXECUTOR = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("DubboServiceDelayExporter", true));
 
+    /**
+     * 获取 Protocol 的自适应扩展类实例, 它会根据url参数来动态的生成其它扩展类来实现
+     */
     private static final Protocol PROTOCOL = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();
 
     /**
@@ -129,19 +132,19 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
     private static final ProxyFactory PROXY_FACTORY = ExtensionLoader.getExtensionLoader(ProxyFactory.class).getAdaptiveExtension();
 
     /**
-     * Whether the provider has been exported
+     * 标识服务是否已经导出了
      */
     private transient volatile boolean exported;
 
     /**
-     * The flag whether a service has unexported ,if the method unexported is invoked, the value is true
+     * 标识服务是否已经取消导出了, 调用unexport()方法后, 此属性就变为true
      */
     private transient volatile boolean unexported;
 
     private DubboBootstrap bootstrap;
 
     /**
-     * The exported services
+     * 已经导出的服务
      */
     private final List<Exporter<?>> exporters = new ArrayList<Exporter<?>>();
 
@@ -186,7 +189,8 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
     }
 
     /**
-     * 一个{@link ServiceConfig}表示一个 dubbo api接口, 通过此方法将该API暴露出去
+     * 一个{@link ServiceConfig}表示一个 dubbo api接口, 通过此方法将该API暴露出去,
+     * 这是dubbo服务暴露的起点.
      */
     public synchronized void export() {
         if (!shouldExport()) {
@@ -194,13 +198,13 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
             return;
         }
         if (bootstrap == null) {
+            // 初始化dubbo的启动类DubboBootstrap
             bootstrap = DubboBootstrap.getInstance();
             bootstrap.initialize();
         }
-
         checkAndUpdateSubConfigs();
 
-        //init serviceMetadata
+        // 初始化服务的元数据.
         serviceMetadata.setVersion(getVersion());
         serviceMetadata.setGroup(getGroup());
         serviceMetadata.setDefaultGroup(getGroup());
@@ -209,10 +213,10 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
         serviceMetadata.setTarget(getRef());
 
         if (shouldDelay()) {
-            // 如果配置了延迟发布, 就放到线程池中
+            // 如果配置了延迟发布, 就放到线程池, 等待配置的时间再发布
             DELAY_EXPORT_EXECUTOR.schedule(this::doExport, getDelay(), TimeUnit.MILLISECONDS);
         } else {
-            // 否则立即发布
+            // 否则立即暴露
             doExport();
         }
         // 广播 ServiceConfigExportedEvent 事件, 新版dubbo提供监听器功能
@@ -297,25 +301,26 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
 
     protected synchronized void doExport() {
         if (unexported) {
-            // 如果此服务不允许发布了, 然后用户又调用了export()方法去发布, 就报错
+            // 如果此服务不允许暴露, 然后用户又调用了export(), 就会报错
             throw new IllegalStateException("The service " + interfaceClass.getName() + " has already unexported!");
         }
         if (exported) {
-            // 已经发布了, 那就直接返回了
+            // 服务已经暴露, 方法直接返回.
             return;
         }
-        // 修改标识, 为已发布
+        // 修改标识, 表示已暴露
         exported = true;
-        // TODO 新版dubbo使用path来标识服务吗？
+        // 设置api服务路径, 其值等于接口的全类名
         if (StringUtils.isEmpty(path)) {
             path = interfaceName;
         }
+        // 通过url将服务暴露
         doExportUrls();
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({"rawtypes"})
     private void doExportUrls() {
-        // TODO 新版本Dubbo, 在本地维护 Provider 和 Consumer
+        // 新版本Dubbo, 在本地维护 Provider 和 Consumer, 会注册它们的一些信息.
         ServiceRepository repository = ApplicationModel.getServiceRepository();
         ServiceDescriptor serviceDescriptor = repository.registerService(getInterfaceClass());
         repository.registerProvider(
@@ -325,14 +330,14 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
                 this,
                 serviceMetadata
         );
-        // 配置and校验要注册的URL
+        // 配置和校验要注册的URL
         List<URL> registryURLs = ConfigValidationUtils.loadRegistries(this, true);
-        // 获取多个协议, 结合协议暴露服务
+        // dubbo支持多协议暴露, 原理就在这里, 它会获取用户配置的多个协议, 然后使用每个协议单独暴露服务
         for (ProtocolConfig protocolConfig : protocols) {
             String pathKey = URL.buildKey(getContextPath(protocolConfig)
                     .map(p -> p + "/" + path)
                     .orElse(path), group, version);
-            // 如果用户指定了路径，请再注册一次服务以将其映射到路径。
+            // 如果用户指定了路径，再注册一次服务以将其映射到路径
             repository.registerService(pathKey, interfaceClass);
             serviceMetadata.setServiceKey(pathKey);
             // 依照每个协议暴露服务
@@ -346,7 +351,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
         if (StringUtils.isEmpty(name)) {
             name = DUBBO;
         }
-        // map用于放置参数
+        // map用于放置参数, 最终会由它来构建出URL对象
         Map<String, String> map = new HashMap<>();
         map.put(SIDE_KEY, PROVIDER_SIDE);
         // 将配置类添加到map中
@@ -379,10 +384,10 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
                 List<ArgumentConfig> arguments = method.getArguments();
                 if (CollectionUtils.isNotEmpty(arguments)) {
                     for (ArgumentConfig argument : arguments) {
-                        // convert argument type
+                        // 转换参数类型
                         if (argument.getType() != null && argument.getType().length() > 0) {
                             Method[] methods = interfaceClass.getMethods();
-                            // visit all methods
+                            // 遍历所有方法
                             if (methods.length > 0) {
                                 for (int i = 0; i < methods.length; i++) {
                                     String methodName = methods[i].getName();
@@ -430,7 +435,6 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
             if (revision != null && revision.length() > 0) {
                 map.put(REVISION_KEY, revision);
             }
-
             String[] methods = Wrapper.getWrapper(interfaceClass).getMethodNames();
             if (methods.length == 0) {
                 logger.warn("No method found in service interface " + interfaceClass.getName());
@@ -439,14 +443,12 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
                 map.put(METHODS_KEY, StringUtils.join(new HashSet<String>(Arrays.asList(methods)), ","));
             }
         }
-
         /*
          * Here the token value configured by the provider is used to assign the value to ServiceConfig#token
          */
         if(ConfigUtils.isEmpty(token) && provider != null) {
             token = provider.getToken();
         }
-
         if (!ConfigUtils.isEmpty(token)) {
             if (ConfigUtils.isDefault(token)) {
                 map.put(TOKEN_KEY, UUID.randomUUID().toString());
@@ -457,33 +459,30 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
         //init serviceMetadata attachments
         serviceMetadata.getAttachments().putAll(map);
 
-        // 获取配置的host和port信息, 然后创建一个 dubbo 自己的 URL对象
+        // 获取配置的host和port信息, 然后创建一个 dubbo 核心对象 org.apache.dubbo.common.URL
         String host = findConfigedHosts(protocolConfig, registryURLs, map);
         Integer port = findConfigedPorts(protocolConfig, name, map);
         URL url = new URL(name, host, port, getContextPath(protocolConfig).map(p -> p + "/" + path).orElse(path), map);
 
-        // You can customize Configurator to append extra parameters
         // 可以通过dubbo spi机制自定义自己的配置, http://dubbo.apache.org/zh-cn/docs/user/demos/config-rule.html
-        if (ExtensionLoader.getExtensionLoader(ConfiguratorFactory.class)
-                .hasExtension(url.getProtocol())) {
+        if (ExtensionLoader.getExtensionLoader(ConfiguratorFactory.class).hasExtension(url.getProtocol())) {
             url = ExtensionLoader.getExtensionLoader(ConfiguratorFactory.class)
                     .getExtension(url.getProtocol()).getConfigurator(url).configure(url);
         }
 
+        // 获取配置的作用域, 其值若等于none, 表示不需要暴露
         String scope = url.getParameter(SCOPE_KEY);
-        // 如果scope配置为none, 表示不需要暴露
         if (!SCOPE_NONE.equalsIgnoreCase(scope)) {
-
-            // export to local if the config is not remote (export to remote only when config is remote)
+            // 如果作用范围不等于remote, 则暴露服务到本地
             if (!SCOPE_REMOTE.equalsIgnoreCase(scope)) {
-                // 本地暴露, 发布到jvm
+                // 本地暴露到jvm中
                 exportLocal(url);
             }
-            // export to remote if the config is not local (export to local only when config is local)
+            // 如果作用范围不等于local, 则暴露服务到远程
             if (!SCOPE_LOCAL.equalsIgnoreCase(scope)) {
                 if (CollectionUtils.isNotEmpty(registryURLs)) {
                     for (URL registryURL : registryURLs) {
-                        //if protocol is only injvm ,not register
+                        // 如果Protocol只是作用在本地JVM, 就不需要注册到注册中心
                         if (LOCAL_PROTOCOL.equalsIgnoreCase(url.getProtocol())) {
                             continue;
                         }
@@ -505,17 +504,20 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
                         if (StringUtils.isNotEmpty(proxy)) {
                             registryURL = registryURL.addParameter(PROXY_KEY, proxy);
                         }
-                        // 通过ProxyFactory获取Invoker, 默认使用的是JavassistProxyFactory,
-                        // 一个Invoker是一个dubbo api接口, 它可以执行多个方法.
+
+                        // 通过ProxyFactory获取Invoker, 默认使用的是JavassistProxyFactory, 一个Invoker是一个dubbo api接口, 它可以执行多个方法.
                         // 目前dubbo是用字符串是拼接java代码, 然后生成代理, 这个需要去理解下Javassist
                         Invoker<?> invoker = PROXY_FACTORY.getInvoker(ref, (Class) interfaceClass, registryURL.addParameterAndEncoded(EXPORT_KEY, url.toFullString()));
                         // 对Invoker和ServiceConfig进行一层包裹.
                         DelegateProviderMetaDataInvoker wrapperInvoker = new DelegateProviderMetaDataInvoker(invoker, this);
-                        // 开始暴露服务, PROTOCOL是SPI扩展机制得到的代理类, 它的代码是动态生成的, 所以要到ExtensionLoader去查找, 大概代码为：
-                        // String extName = ( url.getProtocol() == null ? "dubbo" : url.getProtocol() );
-                        // Protocol extension = (Protocol)ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(extName);
-                        // return extension.export(arg0);
-                        // 通过获取协议, 作为扩展名, 能获取SPI实例, 最终通过 RegistryProtocol 注册服务
+                        /*
+                         * 开始暴露服务, PROTOCOL是SPI扩展机制得到的代理类, 它的代码是动态生成的, 所以要到ExtensionLoader去查找, 大概代码为：
+                         * String extName = ( url.getProtocol() == null ? "dubbo" : url.getProtocol() );
+                         * Protocol extension = (Protocol)ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(extName);
+                         * return extension.export(arg0);
+                         */
+                        // 获取协议作为扩展名, 获取到SPI实例, 因为代码走到这边, 其协议为 registry, 所以会生成 RegistryProtocol 实例
+                        // 来注册服务, 转到 RegistryProtocol.export()方法(注意：dubbo对Protocol做了两层包装, 所以并不是一开始就到RegistryProtocol)
                         Exporter<?> exporter = PROTOCOL.export(wrapperInvoker);
                         exporters.add(exporter);
                     }
@@ -530,7 +532,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
                     Exporter<?> exporter = PROTOCOL.export(wrapperInvoker);
                     exporters.add(exporter);
                 }
-                /**
+                /*
                  * @since 2.7.0
                  * ServiceData Store
                  */

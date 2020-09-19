@@ -37,7 +37,10 @@ import static org.apache.dubbo.common.constants.CommonConstants.REFERENCE_FILTER
 import static org.apache.dubbo.common.constants.CommonConstants.SERVICE_FILTER_KEY;
 
 /**
- * ListenerProtocol
+ * 这个类是dubbo对{@link Protocol}的一层包装, 它会配置在配置文件 org.apache.dubbo.rpc.Protocol 中,
+ * 这样通过{@link ExtensionLoader}加载扩展类实例时, 会判断该类是一个包装类, 从而用它将真正的
+ * {@link Protocol}包装起来, 然后返回这个类.补充一句, 这个类会包裹{@link ProtocolFilterWrapper},
+ * 而不是直接包裹真正的{@link Protocol}实现
  */
 @Activate(order = 100)
 public class ProtocolFilterWrapper implements Protocol {
@@ -53,9 +56,12 @@ public class ProtocolFilterWrapper implements Protocol {
 
     private static <T> Invoker<T> buildInvokerChain(final Invoker<T> invoker, String key, String group) {
         Invoker<T> last = invoker;
+        // 先获取指定group, 指定key的Filter扩展类实例
         List<Filter> filters = ExtensionLoader.getExtensionLoader(Filter.class).getActivateExtension(invoker.getUrl(), key, group);
 
         if (!filters.isEmpty()) {
+            // 遍历方式是从集合末尾向前找, 意味着封装Invoker时就是先包裹集合末尾,
+            // 那么最先调用的就是list[0]这个Filter, 而真正的Invoker就会等到最后才会被调用.
             for (int i = filters.size() - 1; i >= 0; i--) {
                 final Filter filter = filters.get(i);
                 final Invoker<T> next = last;
@@ -82,6 +88,7 @@ public class ProtocolFilterWrapper implements Protocol {
                         try {
                             asyncResult = filter.invoke(next, invocation);
                         } catch (Exception e) {
+                            // 如果回调出现异常, 则通过监听器处理异常.
                             if (filter instanceof ListenableFilter) {
                                 ListenableFilter listenableFilter = ((ListenableFilter) filter);
                                 try {
@@ -150,8 +157,11 @@ public class ProtocolFilterWrapper implements Protocol {
     @Override
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
         if (UrlUtils.isRegistry(invoker.getUrl())) {
+            // 如果url是 Registry 协议, 则直接调用 protocol 暴露服务.
             return protocol.export(invoker);
         }
+        // 非 Registry 协议, 会先生成一个 org.apache.dubbo.rpc.Filter 链, 然后用这个链修饰 Invoker, 实际调用 Invoker
+        // 的方法都会这个链上的各个 Filter.
         return protocol.export(buildInvokerChain(invoker, SERVICE_FILTER_KEY, CommonConstants.PROVIDER));
     }
 
